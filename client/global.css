@@ -37,8 +37,9 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    /* Slightly stronger borders for light mode */
+    --border: 214.3 25% 84%;
+    --input: 214.3 25% 84%;
     --ring: 180 100% 35%;
 
     --radius: 0.75rem;

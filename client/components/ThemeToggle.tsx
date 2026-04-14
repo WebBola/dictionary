@@ -11,7 +11,7 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg glass-sm hover:bg-white/10 transition-colors text-sm text-foreground"
+      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg glass-sm hover:bg-accent/10 dark:hover:bg-white/10 transition-colors text-sm text-foreground"
       aria-label={isDark ? "Kunduzgi rejimga o'tish" : "Tungi rejimga o'tish"}
     >
       {isDark ? (

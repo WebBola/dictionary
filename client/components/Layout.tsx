@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="p-2 glass-sm group-hover:bg-white/10 transition-colors">
+              <div className="p-2 glass-sm group-hover:bg-accent/10 dark:group-hover:bg-white/10 transition-colors">
                 <BookOpen className="w-5 h-5 text-accent glow" />
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-8 text-center text-sm text-muted-foreground">
+          <div className="border-t border-border/60 pt-8 text-center text-sm text-muted-foreground">
             <p>&copy; 2024 O'zbek Lug'at. Barcha huquqlar saqlanib qolgan.</p>
           </div>
         </div>
