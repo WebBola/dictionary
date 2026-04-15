@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import { useEffect, useMemo, useState } from "react";
 import { getWordById } from "@/lib/dictionary";
 import type { Word } from "@/components/WordDetail";
+import { loadFavoriteFolders } from "../lib/favoriteFolders";
 
 type QuizQuestion = {
   prompt: string;
@@ -50,7 +51,10 @@ function buildQuizFromWords(words: Word[], count = 10): QuizQuestion[] {
 }
 
 export default function Quizzes() {
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteMap, setFavoriteMap] = useState<Record<string, string>>({});
+  const [folders, setFolders] = useState<string[]>(["Umumiy"]);
+  const [selectedFolder, setSelectedFolder] = useState("Barcha papkalar");
+  const [questionCount, setQuestionCount] = useState(10);
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -59,20 +63,46 @@ export default function Quizzes() {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("favorites");
-    if (saved) setFavoriteIds(JSON.parse(saved));
+    const { folders: savedFolders, mapping } = loadFavoriteFolders();
+    setFolders(savedFolders);
+    setFavoriteMap(mapping);
   }, []);
 
-  const favoriteWords = useMemo(() => {
-    return favoriteIds
-      .map((id) => getWordById(id))
-      .filter(Boolean) as Word[];
-  }, [favoriteIds]);
+  const allFavorites = useMemo(
+    () =>
+      Object.keys(favoriteMap)
+        .map((id) => getWordById(id))
+        .filter(Boolean) as Word[],
+    [favoriteMap]
+  );
 
-  const canStart = favoriteWords.length >= 3;
+  const folderOptions = useMemo(() => ["Barcha papkalar", ...folders], [folders]);
+
+  useEffect(() => {
+    if (!folderOptions.includes(selectedFolder)) {
+      setSelectedFolder("Barcha papkalar");
+    }
+  }, [folderOptions, selectedFolder]);
+
+  const sourceWords = useMemo(() => {
+    if (selectedFolder === "Barcha papkalar") {
+      return allFavorites;
+    }
+    return allFavorites.filter((word) => favoriteMap[word.id] === selectedFolder);
+  }, [allFavorites, favoriteMap, selectedFolder]);
+
+  const maxQuestionCount = Math.max(5, sourceWords.length);
+
+  useEffect(() => {
+    if (questionCount > maxQuestionCount) {
+      setQuestionCount(maxQuestionCount);
+    }
+  }, [maxQuestionCount, questionCount]);
+
+  const canStart = sourceWords.length >= 3;
 
   const start = () => {
-    const questions = buildQuizFromWords(favoriteWords, 10);
+    const questions = buildQuizFromWords(sourceWords, Math.min(questionCount, sourceWords.length));
     setQuiz(questions);
     setIdx(0);
     setSelected(null);
@@ -84,19 +114,16 @@ export default function Quizzes() {
   const current = quiz[idx];
   const isCorrect = current ? selected === current.correctId : false;
 
-  const checkAnswer = () => {
-    if (!current || !selected) return;
-    if (!revealed) {
-      if (selected === current.correctId) setScore((s) => s + 1);
-      setRevealed(true);
-      return;
-    }
+  const advanceQuestion = () => {
+    if (!current || !revealed) return;
 
-    // move to next question
-    if (idx + 1 >= quiz.length) setFinished(true);
-    else setIdx((i) => i + 1);
-    setSelected(null);
-    setRevealed(false);
+    if (idx + 1 >= quiz.length) {
+      setFinished(true);
+    } else {
+      setIdx((i) => i + 1);
+      setSelected(null);
+      setRevealed(false);
+    }
   };
 
   return (
@@ -120,45 +147,77 @@ export default function Quizzes() {
             <div className="glass p-12 text-center">
               <Brain className="w-16 h-16 text-accent/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Viktorina uchun so'zlar yetarli emas
+                Viktorina uchun yetarli so'zlar yo'q
               </h3>
               <p className="text-muted-foreground mb-6">
-                Kamida 3 ta so'zni sevimlilarga qo'shing. Hozir:{" "}
-                <span className="text-foreground font-medium">
-                  {favoriteWords.length} ta
-                </span>
-                .
+                Kamida 3 ta so'zni sevimlilarga qo'shing. Hozir: <span className="text-foreground font-medium">{sourceWords.length} ta</span>.
               </p>
               <Link
                 to="/favorites"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
-                Sevimli So'zlarga O'tish
+                Sevimlilar sahifasiga o'tish
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           ) : quiz.length === 0 ? (
-            <div className="glass p-10">
+            <div className="glass p-10 space-y-6">
               <div className="flex items-start gap-4">
                 <div className="p-3 glass-sm">
                   <Brain className="w-6 h-6 text-accent" />
                 </div>
                 <div className="flex-1">
                   <div className="text-xl font-semibold text-foreground">
-                    Sevimlilar asosida viktorina
+                    Viktorina sozlamalari
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Savollar: 10 ta • Variantlar: 4 ta • Natija oxirida ko'rinadi
+                    Manbani tanlang va savollar sonini belgilab boshlang.
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-between flex-wrap gap-3">
+              <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+                <div className="glass-sm p-5 rounded-3xl border border-white/10">
+                  <label className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-3 block">
+                    Papka tanlash
+                  </label>
+                  <select
+                    value={selectedFolder}
+                    onChange={(e) => setSelectedFolder(e.target.value)}
+                    className="w-full bg-background/10 border border-white/10 rounded-3xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/40 appearance-none"
+                  >
+                    {folderOptions.map((folder) => (
+                      <option key={folder} value={folder}>
+                        {folder}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="glass-sm p-5 rounded-3xl border border-white/10">
+                  <label className="text-sm font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-3 block">
+                    Savollar soni
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={Math.max(5, sourceWords.length)}
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value))}
+                    className="w-full accent-accent"
+                  />
+                  <div className="mt-3 text-sm text-foreground font-semibold">
+                    {questionCount} ta savol
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {sourceWords.length} ta so'z manba sifatida tanlandi.
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm text-muted-foreground">
-                  Sevimli so'zlar:{" "}
-                  <span className="text-foreground font-medium">
-                    {favoriteWords.length}
-                  </span>
+                  Saqlangan so'zlar: <span className="text-foreground font-semibold">{allFavorites.length}</span>
                 </div>
                 <button
                   type="button"
@@ -232,10 +291,14 @@ export default function Quizzes() {
                       key={opt.id}
                       type="button"
                       onClick={() => {
-                        if (!revealed) setSelected(opt.id);
+                        if (revealed) return;
+                        setSelected(opt.id);
+                        if (opt.id === current.correctId) {
+                          setScore((s) => s + 1);
+                        }
+                        setRevealed(true);
                       }}
-                      disabled={revealed}
-                      className={`p-4 rounded-lg text-left transition-all ${
+                      className={`p-4 rounded-xl text-left transition-all duration-150 ${
                         showCorrect
                           ? "bg-accent/20 border border-accent/60"
                           : showWrong
@@ -262,10 +325,8 @@ export default function Quizzes() {
 
               <div className="mt-6 flex items-center justify-between gap-3 flex-wrap">
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
-                  {!selected ? (
+                  {!revealed ? (
                     "Variantni tanlang"
-                  ) : !revealed ? (
-                    "Tekshirish uchun tugmani bosing"
                   ) : isCorrect ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-accent" />
@@ -280,11 +341,11 @@ export default function Quizzes() {
                 </div>
                 <button
                   type="button"
-                  onClick={checkAnswer}
-                  disabled={!selected}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+                  onClick={advanceQuestion}
+                  disabled={!revealed}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-accent text-accent-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  {revealed ? "Keyingi" : "Tekshirish"}
+                  Keyingi
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

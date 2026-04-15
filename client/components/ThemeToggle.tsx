@@ -7,10 +7,20 @@ export default function ThemeToggle() {
   const current = (theme === "system" ? resolvedTheme : theme) ?? "dark";
   const isDark = current === "dark";
 
+  const handleToggle = () => {
+    const nextTheme = isDark ? "light" : "dark";
+    if (isDark) {
+      const audio = new Audio("/sound/faaah_43AIzWF7.mp3");
+      audio.volume = 0.65;
+      audio.play().catch(() => undefined);
+    }
+    setTheme(nextTheme);
+  };
+
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={handleToggle}
       className="inline-flex items-center gap-2 px-3 py-2 rounded-lg glass-sm hover:bg-accent/10 dark:hover:bg-white/10 transition-colors text-sm text-foreground"
       aria-label={isDark ? "Kunduzgi rejimga o'tish" : "Tungi rejimga o'tish"}
     >
