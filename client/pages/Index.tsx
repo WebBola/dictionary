@@ -2,6 +2,13 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { Search, Clock, Zap, Sparkles, Heart } from "lucide-react";
 import Layout from "@/components/Layout";
 import WordDetail, { Word } from "@/components/WordDetail";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { SAMPLE_WORDS, WORD_OF_DAY } from "@/lib/dictionary";
 import {
   FavoriteMap,
@@ -335,7 +342,7 @@ export default function Index() {
                         <section key={letter} id={`letter-${letter}`}>
                           <div className="mb-3 rounded-2xl bg-white/5 p-3">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-base font-semibold text-foreground">
+                              <h3 className="text-base font-semibold text-accent rounded-full bg-accent/10 px-3 py-1">
                                 {letter}
                               </h3>
                               <p className="text-xs text-muted-foreground">
@@ -419,17 +426,18 @@ export default function Index() {
                     <label className="text-sm font-medium text-foreground block mb-2">
                       Papka tanlang
                     </label>
-                    <select
-                      value={selectedFolder}
-                      onChange={(e) => setSelectedFolder(e.target.value)}
-                      className="w-full bg-background/90 border border-white/10 rounded-2xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-                    >
-                      {folders.map((folder) => (
-                        <option key={folder} value={folder}>
-                          {folder}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                      <SelectTrigger className="w-full" aria-label="Papka tanlang">
+                        <SelectValue placeholder="Umumiy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {folders.map((folder) => (
+                          <SelectItem key={folder} value={folder}>
+                            {folder}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground block mb-2">

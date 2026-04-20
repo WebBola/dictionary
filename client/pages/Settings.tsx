@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { loadFavoriteFolders } from "../lib/favoriteFolders";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,10 +29,25 @@ export default function Settings() {
 
   const counts = useMemo(() => {
     const historyRaw = localStorage.getItem("searchHistory");
-    const favoritesRaw = localStorage.getItem("favorites");
+    const favoriteFoldersRaw = localStorage.getItem("favoriteFolders");
+    let favoritesCount = 0;
+
+    if (favoriteFoldersRaw) {
+      try {
+        const parsed = JSON.parse(favoriteFoldersRaw) as {
+          mapping?: Record<string, unknown>;
+        };
+        favoritesCount = parsed.mapping
+          ? Object.keys(parsed.mapping).length
+          : 0;
+      } catch {
+        favoritesCount = 0;
+      }
+    }
+
     return {
       history: historyRaw ? (JSON.parse(historyRaw) as unknown[]).length : 0,
-      favorites: favoritesRaw ? (JSON.parse(favoritesRaw) as unknown[]).length : 0,
+      favorites: favoritesCount,
     };
   }, []);
 
@@ -41,6 +57,7 @@ export default function Settings() {
   };
 
   const clearFavorites = () => {
+    localStorage.removeItem("favoriteFolders");
     localStorage.removeItem("favorites");
     toast.success("Sevimli so'zlar tozalandi");
   };

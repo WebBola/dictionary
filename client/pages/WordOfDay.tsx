@@ -4,28 +4,96 @@ import Layout from "@/components/Layout";
 import WordDetail from "@/components/WordDetail";
 import { useState, useEffect } from "react";
 import { WORD_OF_DAY } from "@/lib/dictionary";
+import {
+  FavoriteMap,
+  loadFavoriteFolders,
+  saveFavoriteFolders,
+} from "../lib/favoriteFolders";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export default function WordOfDay() {
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [folders, setFolders] = useState<string[]>(["Umumiy"]);
+  const [favoriteMap, setFavoriteMap] = useState<FavoriteMap>({});
+  const [selectedFolder, setSelectedFolder] = useState("Umumiy");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("favorites");
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
+    if (typeof window === "undefined") return;
+
+    const storedFolderData = localStorage.getItem("favoriteFolders");
+    if (storedFolderData) {
+      const { folders: savedFolders, mapping } = loadFavoriteFolders();
+      setFolders(savedFolders);
+      setFavoriteMap(mapping);
+      return;
     }
+
+    const legacyFavorites = localStorage.getItem("favorites");
+    if (legacyFavorites) {
+      try {
+        const parsed = JSON.parse(legacyFavorites);
+        if (Array.isArray(parsed)) {
+          const mapping = parsed.reduce<FavoriteMap>((acc, item) => {
+            if (typeof item === "string") {
+              acc[item] = "Umumiy";
+            }
+            return acc;
+          }, {});
+          const nextFolders = ["Umumiy"];
+          saveFavoriteFolders(nextFolders, mapping);
+          localStorage.removeItem("favorites");
+          setFolders(nextFolders);
+          setFavoriteMap(mapping);
+          return;
+        }
+      } catch {
+        // ignore invalid legacy data
+      }
+    }
+
+    const { folders: defaultFolders, mapping: defaultMapping } = loadFavoriteFolders();
+    setFolders(defaultFolders);
+    setFavoriteMap(defaultMapping);
   }, []);
 
+  const isFavorite = Boolean(favoriteMap[WORD_OF_DAY.id]);
+
+  const addFavorite = () => {
+    const folderName = selectedFolder || "Umumiy";
+    const nextFolders = folders.includes(folderName) ? folders : [...folders, folderName];
+    const nextFavorites = { ...favoriteMap, [WORD_OF_DAY.id]: folderName };
+    setFolders(nextFolders);
+    setFavoriteMap(nextFavorites);
+    saveFavoriteFolders(nextFolders, nextFavorites);
+    setSaveDialogOpen(false);
+  };
+
   const handleToggleFavorite = (wordId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(wordId)) {
-        newFavorites.delete(wordId);
-      } else {
-        newFavorites.add(wordId);
-      }
-      localStorage.setItem("favorites", JSON.stringify(Array.from(newFavorites)));
-      return newFavorites;
-    });
+    if (favoriteMap[wordId]) {
+      const nextFavorites = { ...favoriteMap };
+      delete nextFavorites[wordId];
+      setFavoriteMap(nextFavorites);
+      saveFavoriteFolders(folders, nextFavorites);
+      return;
+    }
+
+    setSelectedFolder(folders[0] || "Umumiy");
+    setSaveDialogOpen(true);
   };
 
   const handleShare = () => {
@@ -61,7 +129,7 @@ export default function WordOfDay() {
               <WordDetail
                 word={WORD_OF_DAY}
                 onFavoriteToggle={handleToggleFavorite}
-                isFavorite={favorites.has(WORD_OF_DAY.id)}
+                isFavorite={isFavorite}
               />
             </div>
 
@@ -95,6 +163,50 @@ export default function WordOfDay() {
               </div>
             </div>
           </div>
+
+          <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Papka tanlang</DialogTitle>
+                <DialogDescription>
+                  Kun so'zini sevimlilar papkasiga qo'shing.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">
+                    Papka tanlang
+                  </label>
+                  <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                    <SelectTrigger className="w-full" aria-label="Papka tanlang">
+                      <SelectValue placeholder="Umumiy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {folders.map((folder) => (
+                        <SelectItem key={folder} value={folder}>
+                          {folder}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <DialogClose asChild>
+                  <button className="px-4 py-3 rounded-lg text-sm text-foreground bg-white/10 hover:bg-white/20 transition-colors">
+                    Bekor qilish
+                  </button>
+                </DialogClose>
+                <button
+                  type="button"
+                  onClick={addFavorite}
+                  className="px-4 py-3 rounded-lg text-sm bg-accent text-accent-foreground hover:opacity-90 transition-opacity"
+                >
+                  Saqlash
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </Layout>
