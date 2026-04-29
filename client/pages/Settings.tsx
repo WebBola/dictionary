@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import AdminReports from "@/components/AdminReports";
 
 export default function Settings() {
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -195,6 +196,14 @@ export default function Settings() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
+            </div>
+
+            {/* Admin Reports */}
+            <div className="glass p-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4">
+                Admin - Xatolik Xabarlari
+              </h2>
+              <AdminReports />
             </div>
 
             {/* About */}

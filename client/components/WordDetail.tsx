@@ -1,5 +1,6 @@
 import { Heart, Volume2, Flag } from "lucide-react";
 import { useState } from "react";
+import ErrorReport from "./ErrorReport";
 
 export interface Word {
   id: string;
@@ -167,11 +168,8 @@ export default function WordDetail({
       )}
 
       {/* Report Error */}
-      <div className="glass p-6">
-        <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors group">
-          <Flag className="w-4 h-4 group-hover:text-accent" />
-          Xatolikni Bildir
-        </button>
+      <div className="glass p-6 mb-6">
+        <ErrorReport />
       </div>
     </div>
   );
